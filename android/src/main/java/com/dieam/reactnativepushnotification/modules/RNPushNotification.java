@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import android.util.Log;
+
 public class RNPushNotification extends ReactContextBaseJavaModule implements ActivityEventListener {
     public static final String LOG_TAG = "RNPushNotification";// all logging should use this tag
 
@@ -58,10 +60,20 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
         return constants;
     }
 
+    private Bundle getNotificationBundle(Intent intent) {
+      if (intent.hasExtra("notification")) {
+        return intent.getBundleExtra("notification");
+      } else if (intent.hasExtra("google.message_id")) {
+        return intent.getExtras();
+      }
+      return null;
+    }
+
     public void onNewIntent(Intent intent) {
-        if (intent.hasExtra("notification")) {
-            Bundle bundle = intent.getBundleExtra("notification");
+      Bundle bundle = getNotificationBundle(intent);
+        if (bundle != null) {
             bundle.putBoolean("foreground", false);
+            bundle.putBoolean("userInteraction", true);
             intent.putExtra("notification", bundle);
             mJsDelivery.notifyNotification(bundle);
         }
@@ -141,9 +153,10 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
         Activity activity = getCurrentActivity();
         if (activity != null) {
             Intent intent = activity.getIntent();
-            Bundle bundle = intent.getBundleExtra("notification");
+            Bundle bundle = getNotificationBundle(intent);
             if (bundle != null) {
                 bundle.putBoolean("foreground", false);
+                bundle.putBoolean("userInteraction", true);
                 String bundleString = mJsDelivery.convertJSON(bundle);
                 params.putString("dataJSON", bundleString);
             }
